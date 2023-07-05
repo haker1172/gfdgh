@@ -42,32 +42,30 @@ void features::Godmode(bool toggle)
 
 void features::Noclip()
 {
-    Vector3 camPos = CAM::GET_GAMEPLAY_CAM_COORD();
-    float camHeading = CAM::GET_GAMEPLAY_CAM_ROT(2).z;
+	Vector3 camera_direction = Game::vector::get_cam_direction();
+	float speed = 0.5f;
 
-    float speed = 0.5f; // Скорость движения
-    float dx = 0.0f;
-    float dy = 0.0f;
+	Entity target = !PED::IS_PED_IN_ANY_VEHICLE(PLAYER::PLAYER_PED_ID(), false) ? PLAYER::PLAYER_PED_ID() : PED::GET_VEHICLE_PED_IS_IN(PLAYER::PLAYER_PED_ID(), false);
+	Vector3 position = ENTITY::GET_ENTITY_COORDS(target, false);
 
-    // Чтение ввода для движения влево/вправо
-    if (PAD::IS_DISABLED_CONTROL_PRESSED(0, INPUT_MOVE_LEFT_ONLY))
-    {
-        dx = -speed;
-    }
-    else if (PAD::IS_DISABLED_CONTROL_PRESSED(0, INPUT_MOVE_RIGHT_ONLY))
-    {
-        dx = speed;
-    }
+	if (ENTITY::IS_ENTITY_A_PED(target))
+		CAM::SET_FOLLOW_PED_CAM_VIEW_MODE(ThirdPersonFar);
+	else
+		CAM::SET_FOLLOW_VEHICLE_CAM_ZOOM_LEVEL(ThirdPersonFar);
 
-    // Поворот движения влево/вправо относительно камеры
-    float headingRad = DEG2RAD(camHeading);
-    float cosHeading = cosf(headingRad);
-    float sinHeading = sinf(headingRad);
+	WEAPON::GIVE_WEAPON_TO_PED(PLAYER::PLAYER_PED_ID(), 0xA2719263, 0, false, true);
+	ENTITY::SET_ENTITY_COLLISION(target, false, false);
+	ENTITY::FREEZE_ENTITY_POSITION(target, true);
 
-    float tempX = dx * cosHeading - dy * sinHeading;
-    dy = dx * sinHeading + dy * cosHeading;
-    dx = tempX;
+	Vector3 rotation = CAM::GET_GAMEPLAY_CAM_ROT(0);
+	ENTITY::SET_ENTITY_ROTATION(target, rotation.x, rotation.y, rotation.z, 2, true);
 
-    // Перемещение персонажа
-    ENTITY::APPLY_FORCE_TO_ENTITY(PLAYER::PLAYER_PED_ID(), 1, dx, dy, 0.0f, 0.0f, 0.0f, 0.0f, 0, true, true, true, false, true);
+	if (PAD::IS_DISABLED_CONTROL_PRESSED(0, INPUT_MOVE_UP_ONLY))
+	{
+		ENTITY::SET_ENTITY_COORDS_NO_OFFSET(target, position.x + (camera_direction.x * speed), position.y + (camera_direction.y * speed), position.z + (camera_direction.z * speed), false, false, false);
+	}
+	else if (PAD::IS_DISABLED_CONTROL_PRESSED(0, INPUT_MOVE_DOWN_ONLY))
+	{
+		ENTITY::SET_ENTITY_COORDS_NO_OFFSET(target, position.x - (camera_direction.x * speed), position.y - (camera_direction.y * speed), position.z - (camera_direction.z * speed), false, false, false);
+	}
 }
